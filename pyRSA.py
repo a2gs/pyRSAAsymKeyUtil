@@ -108,7 +108,7 @@ def encrypt(pubKeyFile : str = '') -> [bool, str]:
 
 	# reading from stdin pipe
 	if stdin.isatty() == True:
-		return([False, "Pipe private key from stdin"])
+		return([False, "Pipe public key from stdin"])
 
 	message = ''.join([i for i in stdin]).encode('ascii')
 
