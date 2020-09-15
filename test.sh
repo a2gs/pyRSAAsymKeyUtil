@@ -88,7 +88,7 @@ cat "$signedDecryptedPlainTextFile" | ./pyRSA.py CHECKSIGN "$publicKeyFile"
 
 if [ "$?" -ne 0 ];
 then
-	echo "Truested text!"
+	echo "Trusted text!"
 else
 	echo "SIGNATURE DOES NOT MATCH!"
 fi
