@@ -3,6 +3,7 @@
 
 # Andre Augusto Giannotti Scota (https://sites.google.com/view/a2gs/)
 
+from base64 import b64encode, b64decode
 from sys import exit, argv, stdin
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
@@ -146,8 +147,7 @@ def encrypt(pubKeyFile : str = '') -> [bool, str]:
 	except:
 		return([False, "Encrypt generic error"])
 
-	#[print(x.decode('ascii')) for x in encryptMessage.splitlines()]
-	print(encryptMessage)
+	print(b64encode(encryptMessage).decode("ascii"))
 
 	return([True, "Ok"])
 
@@ -163,6 +163,7 @@ def decrypt(privKeyFile : str = '') -> [bool, str]:
 
 		try:
 			private_key = serialization.load_pem_private_key(privKeyFileHandle.read(),
+		                                                    password = None,
 			                                                 backend = default_backend())
 
 		except Exception as e:
@@ -172,7 +173,7 @@ def decrypt(privKeyFile : str = '') -> [bool, str]:
 			return([False, "Decrypt Load PEM Private Key generic error"])
 
 	try:
-		plaintext = private_key.decrypt(encryptMessage,
+		plaintext = private_key.decrypt(b64decode(encryptMessage),
 		                                padding.OAEP(mgf = padding.MGF1(algorithm = hashes.SHA256()),
 		                                             algorithm = hashes.SHA256(),
 		                                             label = None))
@@ -183,8 +184,8 @@ def decrypt(privKeyFile : str = '') -> [bool, str]:
 	except:
 		return([False, "Decrypt generic error"])
 
-	#[print(x.decode('ascii')) for x in decryptMessage.splitlines()]
-	print(decryptMessage)
+	[print(x.decode('ascii')) for x in plaintext.splitlines()]
+	#print(plaintext)
 
 	return([True, "Ok"])
 
@@ -200,6 +201,7 @@ def sign(privKeyFile : str = '') -> [bool, str]:
 
 		try:
 			private_key = serialization.load_pem_private_key(privKeyFileHandle.read(),
+		                                                    password = None,
 			                                                 backend = default_backend())
 		except Exception as e:
 			return([False, f"Sign Load PEM Private Key error: [{e}]"])
