@@ -3,6 +3,8 @@
 
 # Andre Augusto Giannotti Scota (https://sites.google.com/view/a2gs/)
 
+import pudb
+
 from base64 import b64encode, b64decode
 from sys import exit, argv, stdin
 from cryptography.hazmat.backends import default_backend
@@ -18,7 +20,7 @@ def printHelp(exec):
 	print(f'3) Encrypting:\n\tcat plainMsg.text | {exec} ENC publicKey.pem > msgOut.text.rsa\n')
 	print(f'4) Decrypting:\n\tcat msgOut.text.rsa | {exec} DEC privateKey.pem > plainMsg.text\n')
 	print(f'5) Sign:\n\tcat msg.text | {exec} SIGN privateKey.pem > singedMsg.text\n\t(or publicKey.pem)\n')
-	print(f"6) Check sign:\n\tcat signedMsg.text | {exec} CHECKSIGN publicKey.pem\n\tReturn: 'Ok' or 'NOk' to stdout (and 0 and 1 to shell)")
+	print(f"6) Check sign:\n\tcat signedMsg.text | {exec} CHECKSIGN publicKey.pem fileToCheck.text\n\tReturn: 'Ok' or 'NOk' to stdout (and 0 and 1 to shell)")
 
 # ------------------------------------------------------------------
 
@@ -147,7 +149,9 @@ def encrypt(pubKeyFile : str = '') -> [bool, str]:
 	except:
 		return([False, "Encrypt generic error"])
 
-	print(b64encode(encryptMessage).decode("ascii"))
+	#print('-----BEGIN ENCRYPTED MESSAGE-----')
+	print(b64encode(encryptMessage).decode('ascii'))
+	#print('-----END ENCRYPTED MESSAGE-----')
 
 	return([True, "Ok"])
 
@@ -221,20 +225,20 @@ def sign(privKeyFile : str = '') -> [bool, str]:
 	except:
 		return([False, "Sign generic error"])
 
-	#[print(x.decode('ascii')) for x in signature.splitlines()]
-	print(signature)
+	print(b64encode(signature).decode('ascii'))
 
 	return([True, "Ok"])
 	
 # ------------------------------------------------------------------
 
-def checkSign(pubKeyFile : str = '') -> [bool, str]:
-
-	print(f"6) Check sign:\n\tcat signedMsg.text | {exec} CHECKSIGN publicKey.pem\n\tReturn: 'Ok' or 'NOk' to stdout (and 0 and 1 to shell)")
+def checkSign(pubKeyFile : str = '', fileToCheck : str = '') -> [bool, str]:
 
 	ret, signedMessage = readBinFromStdinPipe()
 	if ret == False:
 		return([False, "Unable to read from stdin pipe"])
+
+	with open(fileToCheck, 'r') as fileToC:
+		data = fileToC.read().replace('\n', '')
 
 	with open(pubKeyFile, "rb") as pubKeyFileHandle:
 
@@ -249,15 +253,14 @@ def checkSign(pubKeyFile : str = '') -> [bool, str]:
 			return([False, "Check Sign Load PEM Public Key generic error"])
 
 	try:
-		public_key.verify(#signature, TODO
-		                  signedMessage,
+		public_key.verify(signedMessage,
+								data.encode('ascii'),
 		                  padding.PSS(mgf = padding.MGF1(hashes.SHA256()),
 		                              salt_length = padding.PSS.MAX_LENGTH),
 		                  hashes.SHA256())
 
 	except InvalidSignature as e:
-		print(f"Signature does not match: [{e}]")
-		return([True, f"Signature does not match: [{e}]"])
+		return([False, f"Signature does not match."])
 
 	except Exception as e:
 		return([False, f"Check Signature Verify error: [{e}]"])
@@ -274,6 +277,8 @@ if __name__ == '__main__':
 	if len(argv) == 1:
 		printHelp(argv[0])
 		exit(-1)
+
+#pudb.set_trace()
 
 	if argv[1] == 'GENKEY':
 		if len(argv) == 3:
@@ -326,8 +331,8 @@ if __name__ == '__main__':
 			exit(-1)
 
 	elif argv[1] == 'CHECKSIGN':
-		if len(argv) == 3:
-			ret, msgRet = checkSign(argv[2])
+		if len(argv) == 4:
+			ret, msgRet = checkSign(argv[2], argv[3])
 			if ret == False:
 				print(f'Error: {msgRet}')
 				exit(-1)

@@ -25,10 +25,16 @@ encryptedAndSignedFile="$testDate"_signedEncryptedText.rsa
 
 messageText='Gott weiß, ich will kein Engel sein'
 
+function delFiles
+{
+	rm -rf "$@"
+}
+
 ./pyRSA.py GENKEY "$keySize" > "$privKeyFile"
 if [ "$?" -ne 0 ];
 then
 	echo "Error GENKEY..."
+	delFiles "$privKeyFile"
 	exit 1
 fi
 
@@ -41,6 +47,7 @@ cat "$privKeyFile" | ./pyRSA.py GETPUB > "$publicKeyFile"
 if [ "$?" -ne 0 ];
 then
 	echo "Error GETPUB..."
+	delFiles "$privKeyFile" "$publicKeyFile"
 	exit 1
 fi
 
@@ -53,6 +60,7 @@ echo "$messageText" | ./pyRSA.py SIGN "$privKeyFile" > "$signedPlainTextFile"
 if [ "$?" -ne 0 ];
 then
 	echo "Error SIGN..."
+	delFiles "$privKeyFile" "$publicKeyFile" "$signedPlainTextFile"
 	exit 1
 fi
 
@@ -65,6 +73,7 @@ cat "$signedPlainTextFile" | ./pyRSA.py ENC "$publicKeyFile" > "$encryptedAndSig
 if [ "$?" -ne 0 ];
 then
 	echo "Error ENC..."
+	delFiles "$privKeyFile" "$publicKeyFile" "$signedPlainTextFile" "$encryptedAndSignedFile"
 	exit 1
 fi
 
@@ -77,6 +86,7 @@ cat "$encryptedAndSignedFile" | ./pyRSA.py DEC "$privKeyFile" > "$signedDecrypte
 if [ "$?" -ne 0 ];
 then
 	echo "Error DEC..."
+	delFiles "$privKeyFile" "$publicKeyFile" "$signedPlainTextFile" "$encryptedAndSignedFile" "$signedDecryptedPlainTextFile"
 	exit 1
 fi
 
@@ -84,7 +94,7 @@ echo "Decrypted message:"
 cat "$signedDecryptedPlainTextFile"
 
 echo '-----------------------------------------'
-cat "$signedDecryptedPlainTextFile" | ./pyRSA.py CHECKSIGN "$publicKeyFile"
+cat "$signedDecryptedPlainTextFile" | ./pyRSA.py CHECKSIGN "$publicKeyFile" "$messageText"
 
 if [ "$?" -ne 0 ];
 then
@@ -93,4 +103,4 @@ else
 	echo "SIGNATURE DOES NOT MATCH!"
 fi
 
-rm -rf "$privKeyFile $publicKeyFile $signedPlainTextFile $signedDecryptedPlainTextFile $encryptedAndSignedFile"
+delFiles "$privKeyFile" "$publicKeyFile" "$signedPlainTextFile" "$encryptedAndSignedFile" "$signedDecryptedPlainTextFile"
